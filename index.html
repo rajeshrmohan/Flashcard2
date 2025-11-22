@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flashcard Study App</title>
+    <meta name="theme-color" content="#4a6fa5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Flashcard Study">
+    
+    <!-- Custom Flashcard App Icon -->
+    <link rel="icon" href="images/icon-192x192.png" type="image/png">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRmxhc2hjYXJkIFN0dWR5IEFwcCIsInNob3J0X25hbWUiOiJTdHVkeSBDYXJkcyIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZjVmN2ZhIiwidGhlbWVfY29sb3IiOiIjNGE2NmFhIiwib3JpZW50YXRpb24iOiJwb3J0cmFpdCIsImljb25zIjpbeyJzcmMiOiJpbWFnZXMvaWNvbi0xOTJ4MTkyLnBuZyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmcifSx7InNyYyI6ImltYWdlcy9pY29uLTUxMng1MTIucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cae;
+            --accent-color: #ff6b6b;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --sidebar-width: 280px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .app-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+        }
+        
+        .close-sidebar {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-color);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .close-sidebar:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sidebar-actions .action-btn, .sidebar-actions .toggle-btn {
+            width: 100% !important;
+            padding: 0.75rem 1rem !important;
+            justify-content: flex-start;
+            gap: 0.75rem;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .menu-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        
+        .menu-toggle:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+        }
+        
+        .menu-toggle.shifted {
+            left: calc(var(--sidebar-width) + 1rem);
+        }
+        
+        .install-banner {
+            background-color: var(--info-color);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            margin-left: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        .install-banner p {
+            margin: 0;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        
+        .install-btn {
+            background-color: white;
+            color: var(--info-color);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .install-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Image Upload Styles */
+        .image-upload-container {
+            margin-top: 1rem;
+        }
+        
+        .image-upload-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .image-upload-btn {
+            flex: 1;
+            padding: 0.6rem !important;
+            background-color: var(--info-color) !important;
+            font-size: 0.9rem !important;
+        }
+        
+        .image-upload-btn:hover {
+            background-color: #138496 !important;
+        }
+        
+        .image-preview-container {
+            position: relative;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .remove-image-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .flashcards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .flashcard {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            min-height: 180px;
+            width: 100%;
+            position: relative;
+            perspective: 1000px;
+            transition: transform 0.3s ease;
+        }
+        
+        .flashcard:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-front,
+        .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+        
+        .flashcard-front {
+            justify-content: space-between;
+        }
+        
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background: var(--primary-color);
+            color: white;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .flashcard-header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .flashcard-points {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            line-height: 1.2;
+        }
+        
+        .flashcard-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        
+        .flashcard-image {
+            max-width: 100%;
+            max-height: 120px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+        
+        .flashcard-footer {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        
+        .flashcard-details {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .flashcard-back .flashcard-details {
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            line-height: 1.5;
+        }
+        
+        /* Centered layout for cards without images */
+        .flashcard-front.no-image {
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .flashcard-front.no-image .flashcard-header {
+            margin-bottom: 1rem;
+        }
+        
+        .flashcard-front.no-image .flashcard-content {
+            display: none;
+        }
+        
+        .flashcard-front.no-image .flashcard-footer {
+            margin-top: 1rem;
+        }
+        
+        .preview-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .preview-controls button {
+            width: auto !important;
+            padding: 0.6rem 1.2rem !important;
+            margin: 0 !important;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .card-counter {
+            text-align: center;
+            margin: 0.5rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .toggle-btn, .action-btn {
+            width: auto !important;
+            padding: 0.6rem 1rem !important;
+            margin: 0 !important;
+            background-color: var(--accent-color) !important;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .toggle-btn:hover, .action-btn:hover {
+            background-color: #ff5252 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .action-btn.secondary {
+            background-color: #6c757d !important;
+        }
+        
+        .action-btn.secondary:hover {
+            background-color: #5a6268 !important;
+        }
+        
+        /* Quiz Mode Styles */
+        #quiz-mode {
+            display: none;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .quiz-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .quiz-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .quiz-score {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .quiz-question {
+            margin-bottom: 1.5rem;
+        }
+        
+        .quiz-question-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .quiz-option {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .quiz-option:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .quiz-option.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(74, 111, 165, 0.1);
+        }
+        
+        .quiz-option.correct {
+            border-color: var(--success-color);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+        
+        .quiz-option.incorrect {
+            border-color: var(--accent-color);
+            background-color: rgba(255, 107, 107, 0.1);
+        }
+        
+        .quiz-option-letter {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .quiz-option-text {
+            flex: 1;
+        }
+        
+        .quiz-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+        
+        .quiz-progress {
+            flex: 1;
+            margin-right: 1rem;
+        }
+        
+        .quiz-tts-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-color);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            width: auto;
+            margin: 0;
+        }
+        
+        .quiz-tts-btn:hover {
+            background-color: rgba(74, 111, 165, 0.1);
+        }
+        
+        .quiz-results {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .quiz-results-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .quiz-results-score {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+        
+        .quiz-results-message {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: var(--dark-color);
+        }
+        
+        .quiz-restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        .quiz-restart-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* TTS Button Styles */
+        .tts-btn {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--primary-color);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            z-index: 10;
+        }
+        
+        .tts-btn:hover {
+            background-color: rgba(74, 111, 165, 0.1);
+        }
+        
+        .flashcard-back .tts-btn {
+            color: white;
+        }
+        
+        .flashcard-back .tts-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes flipInY {
+            from { transform: perspective(400px) rotateY(90deg); opacity: 0; }
+            to { transform: perspective(400px) rotateY(0deg); opacity: 1; }
+        }
+        
+        .flip-in {
+            animation: flipInY 0.5s ease-out forwards;
+        }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 85%;
+                max-width: 320px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 0.5rem;
+            }
+            
+            .menu-toggle.shifted {
+                left: 1rem;
+            }
+            
+            .install-banner {
+                margin-left: 60px;
+            }
+            
+            .flashcards-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .flashcard {
+                min-height: 160px;
+            }
+            
+            .preview-controls {
+                gap: 0.5rem;
+            }
+            
+            .preview-controls button {
+                padding: 0.5rem 1rem !important;
+                font-size: 0.9rem;
+            }
+            
+            /* Center the preview card on mobile */
+            #preview-mode {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: calc(100vh - 120px);
+                padding: 1rem 0;
+            }
+            
+            #current-card {
+                width: 100%;
+                max-width: 350px;
+            }
+            
+            /* Quiz mode mobile adjustments */
+            .quiz-option {
+                padding: 0.75rem;
+            }
+            
+            .quiz-option-letter {
+                width: 28px;
+                height: 28px;
+                font-size: 0.9rem;
+            }
+            
+            .quiz-controls {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .quiz-progress {
+                margin-right: 0;
+                width: 100%;
+            }
+        }
+        
+        /* Desktop preview mode */
+        @media (min-width: 769px) {
+            #preview-mode {
+                display: block;
+                text-align: center;
+                padding: 2rem 0;
+            }
+            
+            #current-card {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            
+            /* Quiz mode desktop adjustments */
+            .quiz-options {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        /* Overlay for sidebar */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Hidden file inputs */
+        .hidden-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <img src="images/icon-192x192.png" alt="App Icon" class="app-icon">
+                    📚 Flashcards
+                </div>
+                <button class="close-sidebar" id="close-sidebar">×</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-actions">
+                    <button id="preview-cards" class="action-btn secondary" title="Preview flashcards">👁️ Preview Cards</button>
+                    <button id="quiz-mode-btn" class="action-btn secondary" title="Start quiz mode">🎯 Quiz Mode</button>
+                    <button id="save-cards" class="action-btn secondary" title="Save flashcards to a file">💾 Save Set</button>
+                    <button id="load-cards" class="action-btn secondary" title="Load flashcards from a file">📂 Load Set</button>
+                    <button id="import-excel" class="action-btn secondary" title="Import from Excel">📊 From Excel</button>
+                    <button id="clear-cards" class="action-btn secondary" title="Remove all flashcards">🗑️ Clear Cards</button>
+                    <button id="swap-cards" class="action-btn secondary" title="Swap term and definition" style="display: none;">🔄 Swap</button>
+                    <input type="file" id="load-file" accept=".json" class="hidden-input">
+                    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" class="hidden-input">
+                    <button id="toggle-form" class="toggle-btn">+ New Card</button>
+                </div>
+                
+                <div class="controls" id="card-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="card-term">Term:</label>
+                        <input type="text" id="card-term" placeholder="Enter term">
+                    </div>
+                    <div class="form-group">
+                        <label for="card-definition">Definition:</label>
+                        <textarea id="card-definition" rows="3" placeholder="Enter definition"></textarea>
+                    </div>
+                    
+                    <div class="image-upload-container">
+                        <label>Add Image (Optional):</label>
+                        <div class="image-upload-buttons">
+                            <button type="button" id="gallery-btn" class="image-upload-btn">🖼️ Gallery</button>
+                        </div>
+                        <div class="image-preview-container" id="image-preview-container">
+                            <img id="image-preview" class="image-preview" alt="Preview">
+                            <button type="button" id="remove-image-btn" class="remove-image-btn">×</button>
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="gallery-input" accept="image/*" class="hidden-input">
+                    
+                    <button id="add-card">Add Flashcard</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlay for mobile -->
+        <div class="overlay" id="overlay"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content" id="main-content">
+            <button class="menu-toggle" id="menu-toggle">☰</button>
+            
+            <div class="install-banner" id="install-banner" style="display: none;">
+                <p>Install this app on your device for a better experience!</p>
+                <button class="install-btn" id="install-button">Install</button>
+            </div>
+            
+            <div class="flashcards-container" id="flashcards">
+                <!-- Flashcards will be dynamically added here -->
+            </div>
+            
+            <div id="preview-mode" style="display: none;">
+                <div id="current-card">
+                    <!-- Preview card will be dynamically added here -->
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="card-counter">
+                    Card <span id="card-position">1</span> of <span id="total-cards">0</span>
+                </div>
+                <div class="preview-controls">
+                    <button id="prev-card" class="action-btn">⬅️ Previous</button>
+                    <button id="shuffle-cards" class="action-btn secondary">🔀 Shuffle</button>
+                    <button id="next-card" class="action-btn">Next ➡️</button>
+                </div>
+            </div>
+            
+            <!-- Quiz Mode Container -->
+            <div id="quiz-mode">
+                <div class="quiz-container">
+                    <div class="quiz-header">
+                        <div class="quiz-title">Quiz Mode</div>
+                        <div class="quiz-score">Score: <span id="quiz-score">0</span></div>
+                    </div>
+                    
+                    <div id="quiz-content">
+                        <!-- Quiz content will be dynamically added here -->
+                    </div>
+                    
+                    <div class="quiz-controls">
+                        <div class="quiz-progress">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="quiz-progress-bar"></div>
+                            </div>
+                            <div class="card-counter">
+                                Question <span id="quiz-question-position">1</span> of <span id="quiz-total-questions">5</span>
+                            </div>
+                        </div>
+                        <button id="quiz-tts-btn" class="quiz-tts-btn" title="Read question">🔊</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const menuToggle = document.getElementById('menu-toggle');
+            const closeSidebar = document.getElementById('close-sidebar');
+            const overlay = document.getElementById('overlay');
+            const addButton = document.getElementById('add-card');
+            const termInput = document.getElementById('card-term');
+            const definitionInput = document.getElementById('card-definition');
+            const flashcardsContainer = document.getElementById('flashcards');
+            const toggleFormBtn = document.getElementById('toggle-form');
+            const cardForm = document.getElementById('card-form');
+            const previewBtn = document.getElementById('preview-cards');
+            const previewMode = document.getElementById('preview-mode');
+            const currentCardElement = document.getElementById('current-card');
+            const cardPositionElement = document.getElementById('card-position');
+            const totalCardsElement = document.getElementById('total-cards');
+            const prevCardBtn = document.getElementById('prev-card');
+            const nextCardBtn = document.getElementById('next-card');
+            const swapCardsBtn = document.getElementById('swap-cards');
+            const clearCardsBtn = document.getElementById('clear-cards');
+            const saveCardsBtn = document.getElementById('save-cards');
+            const loadCardsBtn = document.getElementById('load-cards');
+            const loadFileInput = document.getElementById('load-file');
+            const importExcelBtn = document.getElementById('import-excel');
+            const excelFileInput = document.getElementById('excel-file');
+            const progressBar = document.getElementById('progress-bar');
+            const shuffleBtn = document.getElementById('shuffle-cards');
+            const toast = document.getElementById('toast');
+            const installBanner = document.getElementById('install-banner');
+            const installButton = document.getElementById('install-button');
+            
+            // Quiz Mode Elements
+            const quizModeBtn = document.getElementById('quiz-mode-btn');
+            const quizMode = document.getElementById('quiz-mode');
+            const quizContent = document.getElementById('quiz-content');
+            const quizScoreElement = document.getElementById('quiz-score');
+            const quizProgressBar = document.getElementById('quiz-progress-bar');
+            const quizQuestionPositionElement = document.getElementById('quiz-question-position');
+            const quizTotalQuestionsElement = document.getElementById('quiz-total-questions');
+            const quizTtsBtn = document.getElementById('quiz-tts-btn');
+            
+            // Image upload elements
+            const galleryBtn = document.getElementById('gallery-btn');
+            const galleryInput = document.getElementById('gallery-input');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const imagePreview = document.getElementById('image-preview');
+            const removeImageBtn = document.getElementById('remove-image-btn');
+            
+            // State
+            let cards = JSON.parse(localStorage.getItem('flashcards')) || [];
+            let currentCardIndex = 0;
+            let isPreviewMode = false;
+            let showTermFirst = true;
+            let deferredPrompt = null;
+            let sidebarOpen = window.innerWidth > 768; // Open by default on desktop
+            let currentImageData = null;
+            
+            // Quiz Mode State
+            let isQuizMode = false;
+            let quizQuestions = [];
+            let currentQuestionIndex = 0;
+            let quizScore = 0;
+            let quizSelectedAnswer = null;
+            let quizAnswered = false;
+            
+            // TTS State
+            let speechSynthesis = window.speechSynthesis;
+            let ttsEnabled = 'speechSynthesis' in window;
+            
+            // Initialize UI
+            if (sidebarOpen) {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+                menuToggle.classList.add('shifted');
+            } else {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                menuToggle.classList.remove('shifted');
+            }
+            
+            // Sidebar toggle functionality
+            menuToggle.addEventListener('click', () => {
+                sidebarOpen = !sidebarOpen;
+                if (sidebarOpen) {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('expanded');
+                    menuToggle.classList.add('shifted');
+                    if (window.innerWidth <= 768) {
+                        overlay.classList.add('active');
+                    }
+                } else {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('expanded');
+                    menuToggle.classList.remove('shifted');
+                    overlay.classList.remove('active');
+                }
+            });
+            
+            closeSidebar.addEventListener('click', () => {
+                sidebarOpen = false;
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                menuToggle.classList.remove('shifted');
+                overlay.classList.remove('active');
+            });
+            
+            overlay.addEventListener('click', () => {
+                sidebarOpen = false;
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                menuToggle.classList.remove('shifted');
+                overlay.classList.remove('active');
+            });
+            
+            // PWA Installation
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installBanner.style.display = 'flex';
+            });
+            
+            installButton.addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            showToast('App installed successfully!');
+                        } else {
+                            showToast('Installation cancelled');
+                        }
+                        deferredPrompt = null;
+                        installBanner.style.display = 'none';
+                    });
+                }
+            });
+            
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('data:text/javascript;base64,' + btoa(`
+                    const CACHE_NAME = 'flashcards-app-v1';
+                    const urlsToCache = [
+                        '/',
+                        'images/icon-192x192.png',
+                        'images/icon-512x512.png',
+                        'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+                    ];
+
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => {
+                                    return response || fetch(event.request);
+                                })
+                        );
+                    });
+                `))
+                .then(registration => console.log('ServiceWorker registered'))
+                .catch(error => console.log('ServiceWorker registration failed:', error));
+            }
+            
+            // Helper function to show toast notifications
+            function showToast(message, duration = 3000) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+            
+            // TTS Functionality
+            function speakText(text, callback) {
+                if (!ttsEnabled) {
+                    console.warn('Text-to-speech not supported in this browser');
+                    if (callback) callback();
+                    return;
+                }
+                
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                if (callback) {
+                    utterance.onend = callback;
+                }
+                
+                speechSynthesis.speak(utterance);
+            }
+            
+            // Image upload functionality
+            galleryBtn.addEventListener('click', () => {
+                galleryInput.click();
+            });
+            
+            galleryInput.addEventListener('change', handleImageUpload);
+            
+            function handleImageUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select an image file');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentImageData = event.target.result;
+                    imagePreview.src = currentImageData;
+                    imagePreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                
+                // Reset the input so the same file can be selected again
+                e.target.value = '';
+            }
+            
+            removeImageBtn.addEventListener('click', () => {
+                currentImageData = null;
+                imagePreviewContainer.style.display = 'none';
+                imagePreview.src = '';
+            });
+            
+            // Display existing cards
+            function displayCards() {
+                flashcardsContainer.innerHTML = '';
+                cards.forEach((card, index) => {
+                    createCardElement(card, index);
+                });
+                
+                if (isPreviewMode) {
+                    totalCardsElement.textContent = cards.length;
+                    if (cards.length > 0) {
+                        currentCardIndex = Math.min(currentCardIndex, cards.length - 1);
+                        updatePreviewCard();
+                        updateProgressBar();
+                    }
+                }
+            }
+            
+            // Create a new flashcard element
+            function createCardElement(card, index) {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'flashcard flip-in';
+                cardElement.style.animationDelay = `${index * 0.1}s`;
+                
+                const hasImage = card.image && card.image.trim() !== '';
+                const noImageClass = hasImage ? '' : 'no-image';
+                const imageHtml = hasImage ? `<img src="${card.image}" class="flashcard-image" alt="Card image">` : '';
+                
+                cardElement.innerHTML = `
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front ${noImageClass}">
+                            <div class="flashcard-header">
+                                <div class="flashcard-points">${card.term}</div>
+                            </div>
+                            <div class="flashcard-content">
+                                ${imageHtml}
+                            </div>
+                            <div class="flashcard-footer">
+                                <div class="flashcard-details">Tap to flip</div>
+                            </div>
+                            <button class="tts-btn" data-term="${card.term}" data-definition="${card.definition}">🔊</button>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="flashcard-details">${card.definition}</div>
+                            <button class="tts-btn" data-term="${card.term}" data-definition="${card.definition}">🔊</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to flip card
+                cardElement.addEventListener('click', function(e) {
+                    if (e.target.closest('button')) return;
+                    this.classList.toggle('flipped');
+                });
+                
+                // Add TTS functionality
+                const ttsButtons = cardElement.querySelectorAll('.tts-btn');
+                ttsButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const term = button.getAttribute('data-term');
+                        const definition = button.getAttribute('data-definition');
+                        const isFlipped = cardElement.classList.contains('flipped');
+                        const textToSpeak = isFlipped ? definition : term;
+                        speakText(textToSpeak);
+                    });
+                });
+                
+                // Add delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '×';
+                deleteBtn.style.cssText = `
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: var(--accent-color);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    line-height: 1;
+                    padding: 0;
+                    z-index: 10;
+                `;
+                
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    cards.splice(index, 1);
+                    saveCards();
+                    displayCards();
+                    showToast('Card deleted');
+                });
+                
+                cardElement.appendChild(deleteBtn);
+                flashcardsContainer.appendChild(cardElement);
+            }
+            
+            // Save cards to localStorage
+            function saveCards() {
+                localStorage.setItem('flashcards', JSON.stringify(cards));
+            }
+            
+            // Add new card
+            addButton.addEventListener('click', () => {
+                const term = termInput.value.trim();
+                const definition = definitionInput.value.trim();
+                if (term && definition) {
+                    const newCard = { 
+                        term, 
+                        definition,
+                        image: currentImageData || null
+                    };
+                    cards.push(newCard);
+                    saveCards();
+                    createCardElement(newCard, cards.length - 1);
+                    
+                    // Reset form
+                    termInput.value = '';
+                    definitionInput.value = '';
+                    currentImageData = null;
+                    imagePreviewContainer.style.display = 'none';
+                    imagePreview.src = '';
+                    termInput.focus();
+                    
+                    showToast('Card added successfully!');
+                } else {
+                    showToast('Please enter both term and definition');
+                }
+            });
+            
+            // Allow adding card with Enter key in textarea
+            definitionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    addButton.click();
+                }
+            });
+            
+            // Toggle form visibility
+            toggleFormBtn.addEventListener('click', () => {
+                if (isPreviewMode || isQuizMode) return;
+                const isVisible = cardForm.style.display === 'block';
+                cardForm.style.display = isVisible ? 'none' : 'block';
+                toggleFormBtn.textContent = isVisible ? '+ New Card' : 'Cancel';
+                toggleFormBtn.style.backgroundColor = isVisible ? 'var(--accent-color)' : '#6c757d';
+                
+                // Reset form when closing
+                if (isVisible) {
+                    termInput.value = '';
+                    definitionInput.value = '';
+                    currentImageData = null;
+                    imagePreviewContainer.style.display = 'none';
+                    imagePreview.src = '';
+                }
+            });
+            
+            // Toggle preview mode
+            previewBtn.addEventListener('click', () => {
+                if (isQuizMode) {
+                    exitQuizMode();
+                }
+                
+                isPreviewMode = !isPreviewMode;
+                
+                if (isPreviewMode) {
+                    if (cards.length === 0) {
+                        showToast('No cards to preview! Please add some cards first.');
+                        isPreviewMode = false;
+                        return;
+                    }
+                    
+                    // Hide regular view, show preview
+                    flashcardsContainer.style.display = 'none';
+                    previewMode.style.display = window.innerWidth <= 768 ? 'flex' : 'block';
+                    quizMode.style.display = 'none';
+                    swapCardsBtn.style.display = 'inline-block';
+                    previewBtn.textContent = 'Exit Preview';
+                    previewBtn.style.backgroundColor = '#6c757d';
+                    
+                    // Initialize preview
+                    currentCardIndex = 0;
+                    updatePreviewCard();
+                    updateProgressBar();
+                } else {
+                    // Exiting preview mode
+                    flashcardsContainer.style.display = 'grid';
+                    previewMode.style.display = 'none';
+                    swapCardsBtn.style.display = 'none';
+                    previewBtn.textContent = '👁️ Preview';
+                    previewBtn.style.backgroundColor = 'var(--accent-color)';
+                }
+            });
+            
+            // Quiz Mode functionality
+            quizModeBtn.addEventListener('click', () => {
+                if (isQuizMode) {
+                    exitQuizMode();
+                    return;
+                }
+                
+                if (cards.length < 4) {
+                    showToast('You need at least 4 flashcards to start a quiz!');
+                    return;
+                }
+                
+                if (isPreviewMode) {
+                    isPreviewMode = false;
+                    flashcardsContainer.style.display = 'grid';
+                    previewMode.style.display = 'none';
+                    swapCardsBtn.style.display = 'none';
+                    previewBtn.textContent = '👁️ Preview';
+                    previewBtn.style.backgroundColor = 'var(--accent-color)';
+                }
+                
+                startQuizMode();
+            });
+            
+            function startQuizMode() {
+                isQuizMode = true;
+                quizScore = 0;
+                currentQuestionIndex = 0;
+                quizSelectedAnswer = null;
+                quizAnswered = false;
+                
+                // Create quiz questions
+                quizQuestions = generateQuizQuestions();
+                
+                // Update UI
+                flashcardsContainer.style.display = 'none';
+                previewMode.style.display = 'none';
+                quizMode.style.display = 'block';
+                quizModeBtn.textContent = 'Exit Quiz';
+                quizModeBtn.style.backgroundColor = '#6c757d';
+                quizScoreElement.textContent = '0';
+                quizTotalQuestionsElement.textContent = quizQuestions.length;
+                
+                // Display first question
+                displayQuizQuestion();
+            }
+            
+            function exitQuizMode() {
+                isQuizMode = false;
+                flashcardsContainer.style.display = 'grid';
+                quizMode.style.display = 'none';
+                quizModeBtn.textContent = '🎯 Quiz Mode';
+                quizModeBtn.style.backgroundColor = 'var(--accent-color)';
+            }
+            
+            function generateQuizQuestions() {
+                const numQuestions = Math.min(5, cards.length);
+                const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
+                const selectedCards = shuffledCards.slice(0, numQuestions);
+                
+                const questions = selectedCards.map(card => {
+                    const options = [card.definition];
+                    
+                    // Add 3 random distractors
+                    const distractors = [...cards]
+                        .filter(c => c.definition !== card.definition)
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 3)
+                        .map(c => c.definition);
+                    
+                    options.push(...distractors);
+                    
+                    // Shuffle options
+                    const shuffledOptions = options.sort(() => Math.random() - 0.5);
+                    
+                    return {
+                        term: card.term,
+                        correctAnswer: card.definition,
+                        options: shuffledOptions
+                    };
+                });
+                
+                return questions;
+            }
+            
+            function displayQuizQuestion() {
+                if (currentQuestionIndex >= quizQuestions.length) {
+                    displayQuizResults();
+                    return;
+                }
+                
+                const question = quizQuestions[currentQuestionIndex];
+                quizSelectedAnswer = null;
+                quizAnswered = false;
+                
+                // Update progress
+                quizQuestionPositionElement.textContent = currentQuestionIndex + 1;
+                const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+                quizProgressBar.style.width = `${progress}%`;
+                
+                // Create question HTML
+                const optionsHtml = question.options.map((option, index) => {
+                    const letter = String.fromCharCode(65 + index); // A, B, C, D
+                    return `
+                        <div class="quiz-option" data-index="${index}">
+                            <div class="quiz-option-letter">${letter}</div>
+                            <div class="quiz-option-text">${option}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                quizContent.innerHTML = `
+                    <div class="quiz-question">
+                        <div class="quiz-question-text">What is the definition of: <strong>${question.term}</strong></div>
+                        <div class="quiz-options">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+                
+                // Add click handlers to options
+                const optionElements = quizContent.querySelectorAll('.quiz-option');
+                optionElements.forEach(option => {
+                    option.addEventListener('click', () => selectQuizOption(option));
+                });
+                
+                // Set up TTS button
+                quizTtsBtn.onclick = () => {
+                    speakText(`What is the definition of: ${question.term}`);
+                };
+            }
+            
+            function selectQuizOption(optionElement) {
+                if (quizAnswered) return;
+                
+                // Remove previous selection
+                const allOptions = quizContent.querySelectorAll('.quiz-option');
+                allOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // Mark as selected
+                optionElement.classList.add('selected');
+                quizSelectedAnswer = optionElement.getAttribute('data-index');
+                
+                // Check answer
+                checkQuizAnswer();
+            }
+            
+            function checkQuizAnswer() {
+                if (quizAnswered) return;
+                quizAnswered = true;
+                
+                const question = quizQuestions[currentQuestionIndex];
+                const selectedOption = quizContent.querySelector(`.quiz-option[data-index="${quizSelectedAnswer}"]`);
+                const correctIndex = question.options.indexOf(question.correctAnswer);
+                const correctOption = quizContent.querySelector(`.quiz-option[data-index="${correctIndex}"]`);
+                
+                // Mark correct answer
+                correctOption.classList.add('correct');
+                
+                // Check if selected answer is correct
+                const isCorrect = quizSelectedAnswer == correctIndex;
+                
+                if (isCorrect) {
+                    quizScore++;
+                    quizScoreElement.textContent = quizScore;
+                    speakText("Correct!");
+                } else {
+                    selectedOption.classList.add('incorrect');
+                    speakText("Incorrect!");
+                }
+                
+                // Move to next question after a delay
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    displayQuizQuestion();
+                }, 2000);
+            }
+            
+            function displayQuizResults() {
+                const percentage = Math.round((quizScore / quizQuestions.length) * 100);
+                let message = '';
+                
+                if (percentage >= 80) {
+                    message = 'Excellent work! You really know your stuff!';
+                } else if (percentage >= 60) {
+                    message = 'Good job! With a bit more practice, you\'ll be a pro!';
+                } else {
+                    message = 'Keep practicing! Repetition is the key to learning.';
+                }
+                
+                quizContent.innerHTML = `
+                    <div class="quiz-results">
+                        <div class="quiz-results-title">Quiz Complete!</div>
+                        <div class="quiz-results-score">${quizScore}/${quizQuestions.length}</div>
+                        <div class="quiz-results-message">${message}</div>
+                        <button class="quiz-restart-btn" id="quiz-restart-btn">Try Again</button>
+                    </div>
+                `;
+                
+                // Add event listener to restart button
+                document.getElementById('quiz-restart-btn').addEventListener('click', () => {
+                    startQuizMode();
+                });
+                
+                // Announce results with TTS
+                speakText(`Quiz complete! You scored ${quizScore} out of ${quizQuestions.length}. ${percentage} percent.`);
+            }
+            
+            // Navigation functions
+            prevCardBtn.addEventListener('click', showPrevCard);
+            nextCardBtn.addEventListener('click', showNextCard);
+            
+            // Shuffle cards
+            shuffleBtn.addEventListener('click', () => {
+                if (cards.length <= 1) return;
+                
+                // Fisher-Yates shuffle algorithm
+                for (let i = cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cards[i], cards[j]] = [cards[j], cards[i]];
+                }
+                
+                currentCardIndex = 0;
+                updatePreviewCard();
+                updateProgressBar();
+                showToast('Cards shuffled!');
+            });
+            
+            // Toggle between term/definition first
+            swapCardsBtn.addEventListener('click', () => {
+                showTermFirst = !showTermFirst;
+                updatePreviewCard();
+            });
+            
+            function showNextCard() {
+                if (cards.length === 0) return;
+                currentCardIndex = (currentCardIndex + 1) % cards.length;
+                updatePreviewCard();
+                updateProgressBar();
+            }
+            
+            function showPrevCard() {
+                if (cards.length === 0) return;
+                currentCardIndex = (currentCardIndex - 1 + cards.length) % cards.length;
+                updatePreviewCard();
+                updateProgressBar();
+            }
+            
+            function updateProgressBar() {
+                if (cards.length === 0) return;
+                const progress = ((currentCardIndex + 1) / cards.length) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            function updatePreviewCard() {
+                if (cards.length === 0) return;
+                
+                const card = cards[currentCardIndex];
+                const hasImage = card.image && card.image.trim() !== '';
+                const noImageClass = hasImage ? '' : 'no-image';
+                const imageHtml = hasImage ? `<img src="${card.image}" class="flashcard-image" alt="Card image">` : '';
+                
+                const frontContent = showTermFirst ? 
+                    `<div class="flashcard-header">
+                        <div class="flashcard-points" style="font-size: 1.8rem;">${card.term}</div>
+                    </div>
+                    <div class="flashcard-content">
+                        ${imageHtml}
+                    </div>
+                    <div class="flashcard-footer">
+                        <div class="flashcard-details">Tap to flip</div>
+                    </div>` :
+                    `<div class="flashcard-header">
+                        <div class="flashcard-details" style="font-size: 1.5rem;">${card.definition}</div>
+                    </div>
+                    <div class="flashcard-content">
+                        ${imageHtml}
+                    </div>
+                    <div class="flashcard-footer">
+                        <div class="flashcard-details">Tap to flip</div>
+                    </div>`;
+                     
+                const backContent = showTermFirst ? 
+                    `<div class="flashcard-details" style="font-size: 1.3rem; line-height: 1.6;">${card.definition}</div>` :
+                    `<div class="flashcard-details" style="font-size: 1.3rem; line-height: 1.6;">${card.term}</div>`;
+                
+                currentCardElement.innerHTML = `
+                    <div class="flashcard" style="width: 100%; height: 300px; margin: 0 auto; cursor: pointer;">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front ${noImageClass}" style="height: 100%;">
+                                ${frontContent}
+                                <button class="tts-btn" data-term="${card.term}" data-definition="${card.definition}">🔊</button>
+                            </div>
+                            <div class="flashcard-back" style="height: 100%;">
+                                ${backContent}
+                                <button class="tts-btn" data-term="${card.term}" data-definition="${card.definition}">🔊</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click to flip functionality
+                const previewCard = currentCardElement.querySelector('.flashcard');
+                previewCard.addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                });
+                
+                // Add TTS functionality
+                const ttsButtons = currentCardElement.querySelectorAll('.tts-btn');
+                ttsButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const term = button.getAttribute('data-term');
+                        const definition = button.getAttribute('data-definition');
+                        const isFlipped = previewCard.classList.contains('flipped');
+                        const textToSpeak = isFlipped ? definition : term;
+                        speakText(textToSpeak);
+                    });
+                });
+                
+                // Update position indicator
+                cardPositionElement.textContent = currentCardIndex + 1;
+                totalCardsElement.textContent = cards.length;
+            }
+            
+            // Clear all cards
+            clearCardsBtn.addEventListener('click', () => {
+                if (cards.length === 0) {
+                    showToast('No flashcards to clear!');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to remove all flashcards? This action cannot be undone.')) {
+                    cards = [];
+                    saveCards();
+                    displayCards();
+                    showToast('All flashcards have been removed.');
+                }
+            });
+            
+            // Save cards to file
+            saveCardsBtn.addEventListener('click', () => {
+                if (cards.length === 0) {
+                    showToast('No flashcards to save!');
+                    return;
+                }
+                
+                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cards, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute('href', dataStr);
+                downloadAnchor.setAttribute('download', `flashcards_${new Date().toISOString().split('T')[0]}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                document.body.removeChild(downloadAnchor);
+                showToast('Flashcards saved successfully!');
+            });
+            
+            // Load cards from file
+            loadCardsBtn.addEventListener('click', () => {
+                if (cards.length > 0 && !confirm('This will replace your current flashcards. Continue?')) {
+                    return;
+                }
+                loadFileInput.click();
+            });
+            
+            loadFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const loadedCards = JSON.parse(event.target.result);
+                        if (Array.isArray(loadedCards) && loadedCards.every(card => card.term && card.definition)) {
+                            cards = loadedCards;
+                            saveCards();
+                            displayCards();
+                            showToast('Flashcards loaded successfully!');
+                        } else {
+                            throw new Error('Invalid flashcard format');
+                        }
+                    } catch (error) {
+                        showToast('Error loading flashcards: Invalid file format');
+                        console.error('Error loading flashcards:', error);
+                    }
+                };
+                reader.onerror = () => {
+                    showToast('Error reading file');
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+            
+            // Excel import functionality
+            importExcelBtn.addEventListener('click', () => {
+                excelFileInput.click();
+            });
+            
+            excelFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: ['term', 'definition'] });
+                        
+                        const hasHeader = jsonData.length > 0 && 
+                                         'term' in jsonData[0] && 
+                                         'definition' in jsonData[0];
+                        
+                        const importedCards = hasHeader ? jsonData.slice(1) : jsonData;
+                        
+                        const validCards = importedCards.filter(card => 
+                            card && 
+                            card.term !== undefined && 
+                            card.definition !== undefined &&
+                            String(card.term).trim() !== '' && 
+                            String(card.definition).trim() !== ''
+                        );
+                        
+                        if (validCards.length === 0) {
+                            showToast('No valid flashcards found in the Excel file.');
+                            return;
+                        }
+                        
+                        cards.push(...validCards);
+                        saveCards();
+                        displayCards();
+                        showToast(`Successfully imported ${validCards.length} flashcard(s) from Excel!`);
+                        
+                    } catch (error) {
+                        console.error('Error importing Excel file:', error);
+                        showToast('Error importing Excel file. Please check the format.');
+                    } finally {
+                        e.target.value = '';
+                    }
+                };
+                
+                reader.onerror = function() {
+                    showToast('Error reading the file. Please try again.');
+                    e.target.value = '';
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+            
+            // Initial display of cards
+            displayCards();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    overlay.classList.remove('active');
+                }
+                
+                // Update preview mode display on resize
+                if (isPreviewMode) {
+                    previewMode.style.display = window.innerWidth <= 768 ? 'flex' : 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
